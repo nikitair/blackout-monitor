@@ -1,6 +1,5 @@
 import os
 import time
-import zoneinfo
 import schedule
 import requests
 from datetime import datetime, timezone
@@ -8,6 +7,7 @@ from dotenv import load_dotenv
 import subprocess
 from logging_config import logger
 from db import class_connector
+from bot import TelegramBot
 
 load_dotenv()
 EMAIL_URL = os.getenv("RETOOL_EMAIL_NOTIFICATION_URL")
@@ -110,7 +110,9 @@ class BlackoutMonitor:
             self.blackout = blackout
             self.state_changed_at = datetime.now(timezone.utc)
             self.save_event_to_db()
-                    
+            
+            bot = TelegramBot()
+            bot.send_message(event_message)
             return event_message
             
 
