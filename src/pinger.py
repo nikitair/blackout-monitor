@@ -1,4 +1,6 @@
-import os
+# import os
+import time
+import schedule
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import subprocess
@@ -10,12 +12,12 @@ load_dotenv()
 
 class Pinger:
     
-    
     def __init__(self, location_id: int) -> None:
         self.location_id = location_id
         self.ip_address = None
         self.state = None
         self.state_changed_at = None
+        self.run = False
         
         
     @class_connector
@@ -78,4 +80,12 @@ class Pinger:
             }
         except Exception as ex:
             logger.error(f"!!! exception occurred - ({ex})")
-
+            
+    
+    def launch_polling(self):
+        logger.info("launch pinger polling")
+        schedule.every(10).seconds.do(self.ping_address)
+        while self.run is True:
+            schedule.run_pending()
+            time.sleep(1)
+        logger.warning("polling stopped")
