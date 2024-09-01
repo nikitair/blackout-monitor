@@ -37,8 +37,5 @@ def ping_address(ip_address: str) -> dict | None:
             "error": error
         }
     except Exception as ex:
-        logger.error(f"!!! error occurred - ({ex})")
+        logger.error(f"!!! exception occurred - ({ex})")
 
-
-if __name__ == "__main__":
-    res = ping_address(os.getenv("IP_ADDRESS"))
