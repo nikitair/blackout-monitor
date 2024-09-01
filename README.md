@@ -1,1 +1,1 @@
-# Blackout Monitor v0.0.1
+# Blackout Monitor v0.1.0
