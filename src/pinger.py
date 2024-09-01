@@ -32,7 +32,7 @@ class Pinger:
                     events e
                 FULL OUTER JOIN locations l ON l.id = e.location_id
                 WHERE
-                    l.id = 1
+                    l.id = {self.location_id}
                 ORDER BY
                     e.created_at DESC
                 LIMIT 1;
