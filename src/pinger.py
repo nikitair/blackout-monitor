@@ -1,9 +1,49 @@
 import os
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 import subprocess
 from logging_config import logger
+from db import class_connector
 
 load_dotenv()
+
+
+class Pinger:
+    
+    
+    def __init__(self, location_id: int):
+        self.location_id = location_id
+        self.ip_address = None
+        self.state = None
+        self.state_changed_at = None
+        
+        
+    @class_connector
+    def set_location_data(self, con):
+        with con.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT
+                    l.id AS location_id,
+                    l.ip,
+                    e.state,
+                    e.created_at
+                FROM
+                    events e
+                FULL OUTER JOIN locations l ON l.id = e.location_id
+                WHERE
+                    l.id = 1
+                ORDER BY
+                    e.created_at DESC
+                LIMIT 1;
+                """
+            )
+            data = cur.fetchall()
+            logger.info(f"sql response data - ({data})")
+            if data:
+                self.ip_address = data[0][1]
+                self.state = data[0][2] if data[0][2] else "connected"
+                self.state_changed_at = data[0][3] if data[0][3] else datetime.now(timezone.utc)
 
 
 def ping_address(ip_address: str) -> dict | None:

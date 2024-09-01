@@ -29,14 +29,29 @@ CONNECTION_STRING = f"dbname={POSTGRES_DATABASE} user={POSTGRES_USER} host={
 #         data = cur.fetchall()
 #         print(data)
 
-
 def connector(sql_query):
     def wrapper(*args, **kwargs):
         try:
             with psycopg.connect(CONNECTION_STRING) as conn:
                 logger.info("successful postgres connection")
-                res = sql_query(conn, *args, **kwargs)
-                return res
+                return sql_query(conn, *args, **kwargs)
+        except PostgresSyntaxError as ex:
+            logger.error(f"!!! postgres syntax error occurred - ({ex})")
+        except PostgresOperationalError as ex:
+            logger.error(f"!!! failed postgres connection - ({ex})")
+        except PostgresProgrammingError as ex:
+            logger.error(f"!!! other postgres error occurred - ({ex})")
+        except Exception as ex:
+            logger.exception(f"!!!! unexpected exception occurred - ({ex})")
+    return wrapper
+
+
+def class_connector(sql_query):
+    def wrapper(self, *args, **kwargs):
+        try:
+            with psycopg.connect(CONNECTION_STRING) as conn:
+                logger.info("successful postgres connection")
+                return sql_query(self, conn, *args, **kwargs)
         except PostgresSyntaxError as ex:
             logger.error(f"!!! postgres syntax error occurred - ({ex})")
         except PostgresOperationalError as ex:
