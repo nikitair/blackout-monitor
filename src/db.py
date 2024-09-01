@@ -15,8 +15,14 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
 
 
-CONNECTION_STRING = f"dbname={POSTGRES_DATABASE} user={POSTGRES_USER} host={
-    POSTGRES_HOST} port={POSTGRES_PORT} password={POSTGRES_PASSWORD} sslmode=require"
+CONNECTION_STRING = f"""
+    dbname={POSTGRES_DATABASE} 
+    user={POSTGRES_USER} 
+    host={ POSTGRES_HOST} 
+    port={POSTGRES_PORT} 
+    password={POSTGRES_PASSWORD}
+    sslmode=require
+"""
 
 
 # with psycopg.connect(CONNECTION_STRING) as conn:
