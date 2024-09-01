@@ -23,7 +23,7 @@ class TelegramBot:
         )
         status_code = response.status_code
         logger.info(f"telegram api status code - ({status_code})")
-        logger.info(f"telegram response data - ({response.text})")
+        # logger.info(f"telegram response data - ({response.text})")
 
 
 if __name__ == "__main__":

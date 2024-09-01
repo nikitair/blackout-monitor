@@ -20,7 +20,7 @@ class BlackoutMonitor:
         self.ip_address = None
         self.blackout = False
         self.state_changed_at = None
-        self.run = False
+        self.run = True
         
         
     @class_connector
@@ -49,9 +49,11 @@ class BlackoutMonitor:
                 self.ip_address = data[0][1]
                 self.blackout = data[0][2] == "disconnected"
                 self.state_changed_at = data[0][3] if data[0][3] else datetime.now(timezone.utc)
+                logger.info(self.__dict__)
             else:
                 self.notify_admin("Blackout Monitor Error", "No IP Address Found in database")
-                raise ValueError("No IP Address Found in database")
+                logger.error("no ip address found in database")
+                self.run = False
 
 
     def ping_address(self) -> dict | None:
@@ -75,9 +77,9 @@ class BlackoutMonitor:
             else:
                 logger.error(f"! error - ({error})")
                 self.notify_admin("Blackout Monitor Error", f"Pinger Error - ({error})")
-                raise ValueError("Pinger Error - ({error})")
+                self.run = False
         else:
-            logger.info("success")
+            logger.info("has power")
 
         return {
             "blackout": status_code != 0,
@@ -90,21 +92,25 @@ class BlackoutMonitor:
     def check_electricity(self) -> None | str:
         if not self.ip_address:
             self.notify_admin("Blackout Monitor Error", "No IP address")
-            raise ValueError("!!! no ip address provided")
+            logger.error("no ip address provided")
+            self.run = False
         
-        ping_response = self.ping_address(self.ip_address)
+        ping_response = self.ping_address()
             
         state_blackout = self.blackout
         blackout = ping_response["blackout"]
         
         if state_blackout != blackout:
+            logger.info("new event")
             event_message = None
-            period = self.calculate_time_period(state_blackout, blackout)
+            period = self.calculate_time_period(self.state_changed_at, datetime.now(timezone.utc))
             
             match state_blackout:
                 case True:
+                    logger.info("🔋 power supply")
                     event_message = f"🔋 Дали свет\n(не было {period[0]} час. {period[1]} мин.)"
                 case False:
+                    logger.info("🪫 blackout")
                     event_message = f"🪫 Отключили свет\n(был {period[0]} час. {period[1]} мин.)"
                     
             self.blackout = blackout
@@ -121,7 +127,7 @@ class BlackoutMonitor:
         time_diff = t_now - t_start
         hours, remainder = divmod(time_diff.total_seconds(), 3600)
         minutes, _ = divmod(remainder, 60)
-        return hours, minutes
+        return int(hours), int(minutes)
     
     
     @class_connector
@@ -142,7 +148,7 @@ class BlackoutMonitor:
                 VALUES
                 (
                     {self.location_id},
-                    {event[self.blackout]}
+                    '{event[self.blackout]}'
                 );
                 """
             )
@@ -150,13 +156,22 @@ class BlackoutMonitor:
 
     def launch_polling(self) -> None:
         logger.info("launch pinger polling")
-        schedule.every(10).seconds.do(self.ping_address)
+        self.set_location_data()
+        schedule.every(10).seconds.do(self.check_electricity)
         while self.run is True:
             schedule.run_pending()
             time.sleep(1)
         logger.warning("polling stopped")
+        self.notify_admin("Blackout Monitor", "Polling stopped")
+        
+        
+    def launch_once(self) -> None:
+        logger.info("launch single check")
+        self.set_location_data()
+        self.check_electricity()
+        
 
-
+    @staticmethod
     def notify_admin(subject: str, message: str) -> None:
         requests.post(
             url=EMAIL_URL, 
@@ -165,3 +180,4 @@ class BlackoutMonitor:
                 "message": message
             }    
         )
+        logger.warning("admin notified")
